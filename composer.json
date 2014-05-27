@@ -18,7 +18,8 @@
         "behat/mink": "1.5.*",
         "behat/mink-extension": "1.2.*",
         "behat/mink-goutte-driver": "1.0.*",
-        "behat/mink-selenium2-driver": "1.1.*"
+        "behat/mink-selenium2-driver": "1.1.*",
+        "symfony/DomCrawler": "2.4.4"
     },
     "autoload": {
         "psr-0": {
