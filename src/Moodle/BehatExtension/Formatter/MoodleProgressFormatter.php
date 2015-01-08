@@ -6,6 +6,8 @@ use Behat\Behat\Formatter\ProgressFormatter;
 
 use Behat\Behat\DataCollector\LoggerDataCollector,
     Behat\Behat\Event\SuiteEvent,
+    Behat\Behat\Event\StepEvent,
+    Moodle\BehatExtension\Exception\BreakException,
     Behat\Behat\Exception\FormatterException;
 
 /**
@@ -62,4 +64,28 @@ class MoodleProgressFormatter extends ProgressFormatter
         $this->writeln($runinfo);
     }
 
+    /**
+     * Listens to "step.after" event.
+     *
+     * @param StepEvent $event
+     *
+     * @uses printStep()
+     */
+    public function afterStep(StepEvent $event)
+    {
+        $eventexception = $event->getException();
+        if ($eventexception && $eventexception instanceof BreakException) {
+            $this->write("{+pending}Press [RETURN] to continue...{-pending}");
+            while (fgets(STDIN, 1024) == '') {
+            }
+        }
+
+        $this->printStep(
+            $event->getStep(),
+            $event->getResult(),
+            $event->getDefinition(),
+            $event->getSnippet(),
+            $eventexception
+        );
+    }
 }

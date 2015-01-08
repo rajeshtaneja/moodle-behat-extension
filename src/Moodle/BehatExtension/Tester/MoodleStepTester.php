@@ -12,7 +12,8 @@ use Behat\Behat\Tester\StepTester,
     Behat\Gherkin\Node\StepNode,
     Behat\Gherkin\Node\ScenarioNode;
 
-use Moodle\BehatExtension\Exception\SkippedException as SkippedException;
+use Moodle\BehatExtension\Exception\SkippedException as SkippedException,
+    Moodle\BehatExtension\Exception\BreakException as BreakException;
 
 use Symfony\Component\DependencyInjection\ContainerInterface,
     Symfony\Component\EventDispatcher\Event;
@@ -178,6 +179,20 @@ class MoodleStepTester extends StepTester
                 $afterEvent->getLogicalParent(),
                 $afterEvent->getContext(),
                 StepEvent::SKIPPED,
+                $afterEvent->getDefinition(),
+                $afterEvent->getException(),
+                null
+            );
+        }
+
+        // Catch breakpoint exception.
+        if ($afterEvent->getException() instanceof BreakException) {
+            $this->dispatchafterstep = true;
+            return new StepEvent(
+                $afterEvent->getStep(),
+                $afterEvent->getLogicalParent(),
+                $afterEvent->getContext(),
+                StepEvent::PASSED,
                 $afterEvent->getDefinition(),
                 $afterEvent->getException(),
                 null
