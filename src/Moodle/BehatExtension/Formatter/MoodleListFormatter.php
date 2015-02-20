@@ -29,6 +29,7 @@
 
 namespace Moodle\BehatExtension\Formatter;
 
+use Behat\Behat\Event\FeatureEvent;
 use Behat\Behat\Event\ScenarioEvent,
     Behat\Behat\Event\OutlineExampleEvent,
     Behat\Behat\Event\OutlineEvent,
@@ -36,13 +37,16 @@ use Behat\Behat\Event\ScenarioEvent,
 
 class MoodleListFormatter extends \Behat\Behat\Formatter\ConsoleFormatter {
 
+    /** @var int Number of steps executed in feature file. */
+    private static $stepcount = 0;
+
     /**
      * Returns default parameters to construct ParameterBag.
      *
      * @return array
      */
     protected function getDefaultParameters() {
-        return array();
+        return array('expand' => true);
     }
 
     /**
@@ -64,7 +68,7 @@ class MoodleListFormatter extends \Behat\Behat\Formatter\ConsoleFormatter {
      * @return array The event names to listen to
      */
     public static function getSubscribedEvents() {
-        $events = array('afterScenario', 'afterOutlineExample');
+        $events = array('afterScenario', 'afterStep', 'beforeFeature', 'afterFeature', 'afterOutlineExample');
         return array_combine($events, $events);
     }
 
@@ -74,10 +78,40 @@ class MoodleListFormatter extends \Behat\Behat\Formatter\ConsoleFormatter {
      * @param ScenarioEvent $event
      */
     public function afterScenario(ScenarioEvent $event) {
-        $scenario = $event->getScenario();
-        $this->writeln($scenario->getFile().':'.$scenario->getLine());
+        if ($this->getParameter('expand')) {
+            $scenario = $event->getScenario();
+            $this->writeln($scenario->getFile() . ':' . $scenario->getLine());
+        }
     }
 
+    /**
+     * Listens to "feature.before" event.
+     *
+     * @param FeatureEvent $event
+     */
+    public function beforeFeature(FeatureEvent $event) {
+        self::$stepcount = 0;
+    }
+
+    /**
+     * Listens to "feature.after" event.
+     *
+     * @param FeatureEvent $event
+     */
+    public function afterFeature(FeatureEvent $event) {
+        if (!$this->getParameter('expand')) {
+            $this->writeln($event->getFeature()->getFile() . '::' . self::$stepcount);
+        }
+    }
+
+    /**
+     * Listens to "step.after" event.
+     *
+     * @param StepEvent $event
+     */
+    public function afterStep(StepEvent $event) {
+        self::$stepcount++;
+    }
 
     /**
      * Listens to "outline.example.after" event.
@@ -85,9 +119,11 @@ class MoodleListFormatter extends \Behat\Behat\Formatter\ConsoleFormatter {
      * @param OutlineExampleEvent $event
      */
     public function afterOutlineExample(OutlineExampleEvent $event) {
-        $outline  = $event->getOutline();
-        $examples = $outline->getExamples();
-        $lines    = $examples->getRowLines();
-        $this->writeln($outline->getFile().':'.$lines[$event->getIteration() + 1]);
+        if ($this->getParameter('expand')) {
+            $outline = $event->getOutline();
+            $examples = $outline->getExamples();
+            $lines = $examples->getRowLines();
+            $this->writeln($outline->getFile() . ':' . $lines[$event->getIteration() + 1]);
+        }
     }
 }
