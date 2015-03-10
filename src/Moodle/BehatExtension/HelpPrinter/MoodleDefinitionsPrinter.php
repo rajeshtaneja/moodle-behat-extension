@@ -70,7 +70,7 @@ TPL;
 
             // Replacing inline regex for expected info string.
             $regex = preg_replace_callback(
-                '/"\(\?P<([^>]*)>(.*?)"( |$)/',
+                '/"?\(\?P"?<([^>]*)>(.*?)"( |$|:)/',
                 function ($matches) {
                     return '"' . strtoupper($matches[1]) . '" ';
             }, $regex);
