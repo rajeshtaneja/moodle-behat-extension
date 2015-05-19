@@ -19,7 +19,7 @@
         "behat/mink-extension": "1.2.0",
         "behat/mink-goutte-driver": "1.0.9",
         "behat/mink-selenium2-driver": "1.1.1",
-        "symfony/symfony": "2.4.9",
+        "symfony/symfony": "2.4.8",
         "guzzlehttp/guzzle": "~3.1"
     },
     "autoload": {
