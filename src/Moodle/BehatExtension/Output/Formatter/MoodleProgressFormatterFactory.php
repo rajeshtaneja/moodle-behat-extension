@@ -23,7 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace Moodle\BehatExtension\Output\ServiceContainer\Formatter;
+namespace Moodle\BehatExtension\Output\Formatter;
 
 use Behat\Testwork\Exception\ServiceContainer\ExceptionExtension;
 use Behat\Testwork\Output\ServiceContainer\OutputExtension;
@@ -61,13 +61,13 @@ class MoodleProgressFormatterFactory extends ProgressFormatterFactory {
 
         $moodleconfig = $container->getParameter('behat.moodle.parameters');
 
-        $definition = new Definition('Moodle\BehatExtension\Output\Node\Printer\Progress\ProgressSetupPrinter',
+        $definition = new Definition('Moodle\BehatExtension\Output\Printer\MoodleProgressPrinter',
             array($moodleconfig['moodledirroot']));
         $container->setDefinition('moodle.output.node.printer.progress.moodleprinter', $definition);
 
         $definition = new Definition('Behat\Testwork\Output\NodeEventListeningFormatter', array(
             'moodle_progress',
-            'Prints one character per step.',
+            'Prints information about then run followed by one character per step.',
             array(
                 'timer' => true
             ),
@@ -92,40 +92,12 @@ class MoodleProgressFormatterFactory extends ProgressFormatterFactory {
                         )),
                         new Definition('Behat\Behat\Output\Node\EventListener\AST\SuiteListener', array(
                             new Reference('moodle.output.node.printer.progress.moodleprinter')
-                        )),
-                        $this->proxySiblingEvents(
-                            OutlineTested::BEFORE,
-                            OutlineTested::AFTER,
-                            array(
-                                new Definition('Behat\Behat\Output\Node\EventListener\AST\SuiteListener', array(
-                                    new Reference('moodle.output.node.printer.progress.moodleprinter')
-                                ))
-                            )
-                        ),
+                        ))
                     )
                 )
             )
         ));
         $definition->addTag(OutputExtension::FORMATTER_TAG, array('priority' => 100));
         $container->setDefinition(OutputExtension::FORMATTER_TAG . '.moodleprogress', $definition);
-    }
-
-    /**
-     * Creates contextual proxy listener.
-     *
-     * @param string       $beforeEventName
-     * @param string       $afterEventName
-     * @param Definition[] $listeners
-     *
-     * @return Definition
-     */
-    protected function proxySiblingEvents($beforeEventName, $afterEventName, array $listeners) {
-        return new Definition('Behat\Behat\Output\Node\EventListener\Flow\FireOnlySiblingsListener',
-            array(
-                $beforeEventName,
-                $afterEventName,
-                new Definition('Behat\Testwork\Output\Node\EventListener\ChainEventListener', array($listeners))
-            )
-        );
     }
 }

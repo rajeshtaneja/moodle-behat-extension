@@ -23,7 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace Moodle\BehatExtension\Output\Node\Printer\Progress;
+namespace Moodle\BehatExtension\Output\Printer;
 
 use Behat\Behat\Output\Node\Printer\SetupPrinter;
 use Behat\Testwork\Output\Formatter;
@@ -39,7 +39,7 @@ use Behat\Testwork\Tester\Result\TestResult;
  *
  * @author Konstantin Kudryashov <ever.zet@gmail.com>
  */
-final class ProgressSetupPrinter implements SetupPrinter {
+final class MoodleProgressPrinter implements SetupPrinter {
 
     /**
      * @var string Moodle directory root.

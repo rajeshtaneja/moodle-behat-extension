@@ -3,6 +3,17 @@ moodle-behat-extension
 
 Behat extension for Moodle to get features and steps definitions from different moodle components; it basically allows multiple features folders and helps with the contexts spreads across components of an external app.
 
+Following custom formats are supported.
+======================================
+* **moodle_progress**: Prints Moodle branch information and dots for each step.
+* **moodle_list**: List all scenarios.
+* **moodle_stepcount**: List all features with total steps in each feature file. Used for parallel run.
+* **moodle_screenshot**: Take screenshot and core dump of each step. With following options you can dump either or both.
+  * **--format-settings '{"formats": "image"}'**: will dump image only
+  * **--format-settings '{"formats": "html"}'**: will dump html only.
+  * **--format-settings '{"formats": "html,image"}'**: will dump both.
+  * **--format-settings '{"formats": "html", "dir_permissions": "0777"}'**
+
 Contributing
 ============
 

@@ -73,7 +73,7 @@ final class MoodleEventDispatchingStepTester implements StepTester
         $this->eventDispatcher->dispatch($event::BEFORE, $event);
 
         $setup = $this->baseTester->setUp($env, $feature, $step, $skip);
-        $this->baseTester->setEventDispacher($this->eventDispatcher);
+        $this->baseTester->setEventDispatcher($this->eventDispatcher);
 
         $event = new AfterStepSetup($env, $feature, $step, $setup);
         $this->eventDispatcher->dispatch($event::AFTER_SETUP, $event);

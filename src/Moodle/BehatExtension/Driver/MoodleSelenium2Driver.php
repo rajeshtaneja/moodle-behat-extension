@@ -147,6 +147,34 @@ JS;
     }
 
     /**
+     * Overwriten method to use our custom Syn library.
+     *
+     * Makes sure that the Syn event library has been injected into the current page,
+     * and return $this for a fluid interface,
+     *
+     *     $this->withSyn()->executeJsOnXpath($xpath, $script);
+     *
+     * @return Selenium2Driver
+     */
+    protected function withSyn()
+    {
+        $hasSyn = $this->getWebDriverSession()->execute(array(
+            'script' => 'return typeof window["Syn"]!=="undefined"',
+            'args'   => array()
+        ));
+
+        if (!$hasSyn) {
+            $synJs = file_get_contents(__DIR__.'/Selenium2/moodle_syn-min.js');
+            $this->getWebDriverSession()->execute(array(
+                'script' => $synJs,
+                'args'   => array()
+            ));
+        }
+
+        return $this;
+    }
+
+    /**
      * Public interface to run Syn scripts.
      *
      * @see self::executeJsOnXpath()

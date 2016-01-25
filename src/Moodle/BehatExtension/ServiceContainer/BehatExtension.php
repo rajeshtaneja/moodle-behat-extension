@@ -9,7 +9,7 @@ use Behat\Testwork\ServiceContainer\ExtensionManager;
 use Behat\Testwork\ServiceContainer\ServiceProcessor;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Moodle\BehatExtension\Output\ServiceContainer\Formatter\MoodleProgressFormatterFactory;
+use Moodle\BehatExtension\Output\Formatter\MoodleProgressFormatterFactory;
 use Behat\Behat\Tester\ServiceContainer\TesterExtension;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
@@ -20,6 +20,7 @@ use Behat\Behat\Definition\ServiceContainer\DefinitionExtension;
 use Behat\Testwork\Cli\ServiceContainer\CliExtension;
 use Behat\Behat\Definition\Printer\ConsoleDefinitionListPrinter;
 use Behat\Behat\Gherkin\ServiceContainer\GherkinExtension;
+use Behat\Testwork\Output\ServiceContainer\OutputExtension;
 
 /**
  * Behat extension for moodle
@@ -68,6 +69,74 @@ class BehatExtension implements ExtensionInterface {
 
         // Load chained step tester.
         $this->loadChainedStepTester($container);
+
+        // Load step count formatter.
+        $this->loadMoodleListFormatter($container);
+
+        // Load step count formatter.
+        $this->loadMoodleStepcountFormatter($container);
+
+        // Load screenshot formatter.
+        $this->loadMoodleScreenshotFormatter($container);
+    }
+
+    /**
+     * Loads moodle List formatter.
+     *
+     * @param ContainerBuilder $container
+     */
+    protected function loadMoodleListFormatter(ContainerBuilder $container) {
+        $definition = new Definition('Moodle\BehatExtension\Output\Formatter\MoodleListFormatter', array(
+            'moodle_list',
+            'Count steps in feature files. Use with --dry-run',
+            array('stepcount' => false),
+            $this->createOutputPrinterDefinition()
+        ));
+        $definition->addTag(OutputExtension::FORMATTER_TAG, array('priority' => 101));
+        $container->setDefinition(OutputExtension::FORMATTER_TAG . '.moodle_list', $definition);
+    }
+
+    /**
+     * Loads moodle Step count formatter.
+     *
+     * @param ContainerBuilder $container
+     */
+    protected function loadMoodleStepcountFormatter(ContainerBuilder $container) {
+        $definition = new Definition('Moodle\BehatExtension\Output\Formatter\MoodleStepcountFormatter', array(
+            'moodle_stepcount',
+            'List all scenarios. Use with --dry-run',
+            array('stepcount' => false),
+            $this->createOutputPrinterDefinition()
+        ));
+        $definition->addTag(OutputExtension::FORMATTER_TAG, array('priority' => 101));
+        $container->setDefinition(OutputExtension::FORMATTER_TAG . '.moodle_stepcount', $definition);
+    }
+
+    /**
+     * Loads moodle screenshot formatter.
+     *
+     * @param ContainerBuilder $container
+     */
+    protected function loadMoodleScreenshotFormatter(ContainerBuilder $container) {
+        $definition = new Definition('Moodle\BehatExtension\Output\Formatter\MoodleScreenshotFormatter', array(
+            'moodle_screenshot',
+            'Take screenshot of all steps. Use --format-settings \'{"formats": "html,image"}\' to get specific o/p type',
+            array('formats' => 'html,image'),
+            $this->createOutputPrinterDefinition()
+        ));
+        $definition->addTag(OutputExtension::FORMATTER_TAG, array('priority' => 102));
+        $container->setDefinition(OutputExtension::FORMATTER_TAG . '.moodle_screenshot', $definition);
+    }
+
+    /**
+     * Creates output printer definition.
+     *
+     * @return Definition
+     */
+    protected function createOutputPrinterDefinition() {
+        return new Definition('Behat\Testwork\Output\Printer\StreamOutputPrinter', array(
+            new Definition('Behat\Behat\Output\Printer\ConsoleOutputFactory'),
+        ));
     }
 
     /**
