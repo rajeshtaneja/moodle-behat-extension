@@ -195,4 +195,13 @@ JS;
         return $this->withSyn()->executeJsOnXpath($xpath, $script, $sync);
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function click($xpath)
+    {
+        $element = $this->getWebDriverSession()->element('xpath', $xpath);
+        $this->getWebDriverSession()->moveto(array('element' => $element->getID()));
+        $element->click();
+    }
 }
