@@ -28,6 +28,7 @@ use Behat\Behat\Tester\Result\ExecutedStepResult;
 use Behat\Behat\Tester\Result\SkippedStepResult;
 use Behat\Behat\Tester\Result\StepResult;
 use Behat\Behat\Tester\StepTester;
+use Moodle\BehatExtension\Context\Step\Given;
 use Moodle\BehatExtension\Context\Step\SubStep;
 use Behat\Gherkin\Node\FeatureNode;
 use Behat\Gherkin\Node\StepNode;
@@ -48,6 +49,11 @@ use Moodle\BehatExtension\Exception\SkippedException;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ChainedStepTester implements StepTester {
+    /**
+     * The text of the step to look for exceptions / debugging messages.
+     */
+    const EXCEPTIONS_STEP_TEXT = 'I look for exceptions';
+
     /**
      * @var StepTester Base step tester.
      */
@@ -72,7 +78,7 @@ class ChainedStepTester implements StepTester {
      *
      * @param EventDispatcherInterface $eventDispatcher
      */
-    public function setEventDispacher(EventDispatcherInterface $eventDispatcher) {
+    public function setEventDispatcher(EventDispatcherInterface $eventDispatcher) {
         $this->eventDispatcher = $eventDispatcher;
     }
 
@@ -89,8 +95,21 @@ class ChainedStepTester implements StepTester {
     public function test(Environment $env, FeatureNode $feature, StepNode $step, $skip) {
         $result = $this->singlesteptester->test($env, $feature, $step, $skip);
 
-        if (!$result instanceof ExecutedStepResult || !$this->supportsResult($result->getCallResult())) {
-            return $this->checkSkipResult($result);
+        if (!($result instanceof ExecutedStepResult) || !$this->supportsResult($result->getCallResult())) {
+            $result = $this->checkSkipResult($result);
+            if (($result instanceof ExecutedStepResult) && $result->hasException()) {
+                return $result;
+            }
+
+            if ($result instanceof SkippedStepResult) {
+                return $result;
+            }
+
+            // Check for exceptions.
+            // Extra step, looking for a moodle exception, a debugging() message or a PHP debug message.
+            $checkingStep = new StepNode('Given', self::EXCEPTIONS_STEP_TEXT, array(), $step->getLine());
+            $afterExceptionCheckingEvent = $this->singlesteptester->test($env, $feature, $checkingStep, $skip);
+            return $this->checkSkipResult($afterExceptionCheckingEvent);
         }
 
         return $this->runChainedSteps($env, $feature, $result, $skip);
