@@ -56,7 +56,7 @@ class MoodleProgressFormatterFactory extends ProgressFormatterFactory {
      */
     protected function loadFormatter(ContainerBuilder $container) {
 
-        $definition = new Definition('Behat\Behat\Output\Statistics\TotalStatistics');
+        $definition = new Definition('Behat\Behat\Output\Statistics\Statistics');
         $container->setDefinition('output.progress.statistics', $definition);
 
         $moodleconfig = $container->getParameter('behat.moodle.parameters');
