@@ -18,6 +18,19 @@ spl_autoload_register(function($class) {
         require_once(__DIR__.'/src/Moodle/BehatExtension/Driver/MoodleSelenium2Driver.php');
         return true;
     }
+    if (false !== strpos($class, 'Behat\\Behat\\Context\\Step\\Given')) {
+        require_once(__DIR__.'/src/Moodle/BehatExtension/Context/Step/Given.php');
+        class_alias('Moodle\\BehatExtension\\Context\\Step\\Given', 'Behat\\Behat\\Context\\Step\\Given');
+        return true;
+    }
+    if (false !== strpos($class, 'Behat\\Behat\\Context\\Step\\When')) {
+        require_once(__DIR__.'/src/Moodle/BehatExtension/Context/Step/When.php');
+        return true;
+    }
+    if (false !== strpos($class, 'Behat\\Behat\\Context\\Step\\Then')) {
+        require_once(__DIR__.'/src/Moodle/BehatExtension/Context/Step/Then.php');
+        return true;
+    }
 }, true, false);
 
 return new Moodle\BehatExtension\ServiceContainer\MoodleExtension;
