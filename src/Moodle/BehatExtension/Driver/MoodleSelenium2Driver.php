@@ -4,12 +4,18 @@ namespace Moodle\BehatExtension\Driver;
 
 use Behat\Mink\Driver\Selenium2Driver as Selenium2Driver;
 use WebDriver\Key as key;
+use WebDriver\WebDriver;
+use Behat\Mink\Exception\DriverException;
+use Behat\Mink\Selector\Xpath\Escaper;
+use WebDriver\Element;
+use WebDriver\Exception\NoSuchElement;
+use WebDriver\Exception\UnknownError;
+use WebDriver\Exception;
 
 /**
  * Selenium2 driver extension to allow extra selenium capabilities restricted by behat/mink-extension.
  */
-class MoodleSelenium2Driver extends Selenium2Driver
-{
+class MoodleSelenium2Driver extends Selenium2Driver {
 
     /**
      * Dirty attribute to get the browser name; $browserName is private
@@ -156,8 +162,7 @@ JS;
      *
      * @return Selenium2Driver
      */
-    protected function withSyn()
-    {
+    protected function withSyn() {
         $hasSyn = $this->getWebDriverSession()->execute(array(
             'script' => 'return typeof window["Syn"]!=="undefined"',
             'args'   => array()
@@ -247,13 +252,84 @@ JS;
 
         if (in_array($elementName, array('input', 'textarea'))) {
             $existingValueLength = strlen($element->attribute('value'));
+            try {
+                $element->click();
+            } catch (\Exception $e) {
+
+            }
+
             // Add the TAB key to ensure we unfocus the field as browsers are triggering the change event only
             // after leaving the field.
             $value = str_repeat(Key::BACKSPACE . Key::DELETE, $existingValueLength) . $value;
         }
 
         $element->postValue(array('value' => array($value)));
-        $script = "Syn.trigger('change', {}, {{ELEMENT}})";
-        $this->withSyn()->executeJsOnXpath($xpath, $script);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function moodle_move_to_and_click_on_element($xpath) {
+        $this->moodle_move_to_element($xpath);
+
+        $this->findElement($xpath)->click();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function moodle_click_on_element($xpath) {
+        $this->findElement($xpath)->click();
+    }
+
+    /**
+     * Move using JsonWireProtocol can fail on few OS/Browsers.
+     * Use JS to scroll to the element, before clicking.
+     *
+     * @param ELEMENT $element element to move to.
+     */
+    public function moodle_move_to_element($xpath) {
+        $element = $this->findElement($xpath);
+        $script = <<<JS
+var node = {{ELEMENT}};
+node.scrollIntoView(true);
+JS;
+        $this->executeJsOnElement($element, $script);
+    }
+
+    /**
+     * @param string $xpath
+     *
+     * @return Element
+     */
+    private function findElement($xpath) {
+        return $this->getWebDriverSession()->element('xpath', $xpath);
+    }
+
+    /**
+     * Executes JS on a given element - pass in a js script string and {{ELEMENT}} will
+     * be replaced with a reference to the element
+     *
+     * @example $this->executeJsOnXpath($xpath, 'return {{ELEMENT}}.childNodes.length');
+     *
+     * @param Element $element the webdriver element
+     * @param string  $script  the script to execute
+     * @param Boolean $sync    whether to run the script synchronously (default is TRUE)
+     *
+     * @return mixed
+     */
+    private function executeJsOnElement(Element $element, $script, $sync = true) {
+        $script  = str_replace('{{ELEMENT}}', 'arguments[0]', $script);
+
+        $options = array(
+            'script' => $script,
+            'args'   => array(array('ELEMENT' => $element->getID())),
+        );
+
+        if ($sync) {
+            return $this->getWebDriverSession()->execute($options);
+        }
+
+        return $this->getWebDriverSession()->execute_async($options);
     }
 }
