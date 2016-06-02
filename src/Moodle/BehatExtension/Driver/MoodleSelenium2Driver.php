@@ -24,6 +24,11 @@ class MoodleSelenium2Driver extends Selenium2Driver {
     protected static $browser;
 
     /**
+     * @var Escaper
+     */
+    private $xpathEscaper;
+
+    /**
      * Instantiates the driver.
      *
      * @param string    $browser Browser name
@@ -44,6 +49,8 @@ class MoodleSelenium2Driver extends Selenium2Driver {
         // This class is instantiated by the dependencies injection system so
         // prior to all of beforeSuite subscribers which will call getBrowser*()
         self::$browser = $browserName;
+
+        $this->xpathEscaper = new Escaper();
     }
 
     /**
@@ -252,11 +259,6 @@ JS;
 
         if (in_array($elementName, array('input', 'textarea'))) {
             $existingValueLength = strlen($element->attribute('value'));
-            try {
-                $element->click();
-            } catch (\Exception $e) {
-
-            }
 
             // Add the TAB key to ensure we unfocus the field as browsers are triggering the change event only
             // after leaving the field.
@@ -264,6 +266,14 @@ JS;
         }
 
         $element->postValue(array('value' => array($value)));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    private function clickOnElement(Element $element) {
+        $this->getWebDriverSession()->moveto(array('element' => $element->getID()));
+        $element->click();
     }
 
     /**
@@ -331,5 +341,123 @@ JS;
         }
 
         return $this->getWebDriverSession()->execute_async($options);
+    }
+
+    /**
+     * Selects a value in a radio button group
+     *
+     * @param Element $element An element referencing one of the radio buttons of the group
+     * @param string  $value   The value to select
+     *
+     * @throws DriverException when the value cannot be found
+     */
+    private function selectRadioValue(Element $element, $value) {
+        // short-circuit when we already have the right button of the group to avoid XPath queries
+        if ($element->attribute('value') === $value) {
+            $element->click();
+
+            return;
+        }
+
+        $name = $element->attribute('name');
+
+        if (!$name) {
+            throw new DriverException(sprintf('The radio button does not have the value "%s"', $value));
+        }
+
+        $formId = $element->attribute('form');
+
+        try {
+            if (null !== $formId) {
+                $xpath = <<<'XPATH'
+//form[@id=%1$s]//input[@type="radio" and not(@form) and @name=%2$s and @value = %3$s]
+|
+//input[@type="radio" and @form=%1$s and @name=%2$s and @value = %3$s]
+XPATH;
+
+                $xpath = sprintf(
+                    $xpath,
+                    $this->xpathEscaper->escapeLiteral($formId),
+                    $this->xpathEscaper->escapeLiteral($name),
+                    $this->xpathEscaper->escapeLiteral($value)
+                );
+                $input = $this->getWebDriverSession()->element('xpath', $xpath);
+            } else {
+                $xpath = sprintf(
+                    './ancestor::form//input[@type="radio" and not(@form) and @name=%s and @value = %s]',
+                    $this->xpathEscaper->escapeLiteral($name),
+                    $this->xpathEscaper->escapeLiteral($value)
+                );
+                $input = $element->element('xpath', $xpath);
+            }
+        } catch (NoSuchElement $e) {
+            $message = sprintf('The radio group "%s" does not have an option "%s"', $name, $value);
+
+            throw new DriverException($message, 0, $e);
+        }
+
+        $input->click();
+    }
+
+    /**
+     * @param Element $element
+     * @param string  $value
+     * @param bool    $multiple
+     */
+    private function selectOptionOnElement(Element $element, $value, $multiple = false)
+    {
+        $escapedValue = $this->xpathEscaper->escapeLiteral($value);
+        // The value of an option is the normalized version of its text when it has no value attribute
+        $optionQuery = sprintf('.//option[@value = %s or (not(@value) and normalize-space(.) = %s)]', $escapedValue, $escapedValue);
+        $option = $element->element('xpath', $optionQuery);
+
+        if ($multiple || !$element->attribute('multiple')) {
+            // Moodle specific fix. Don't use selected check, as it may fail on Mac/FF.
+            // This check is done in moodle code.
+            $option->click();
+
+            return;
+        }
+
+        // Deselect all options before selecting the new one
+        $this->deselectAllOptions($element);
+        $option->click();
+    }
+
+    /**
+     * Deselects all options of a multiple select
+     *
+     * Note: this implementation does not trigger a change event after deselecting the elements.
+     *
+     * @param Element $element
+     */
+    private function deselectAllOptions(Element $element) {
+        $script = <<<JS
+var node = {{ELEMENT}};
+var i, l = node.options.length;
+for (i = 0; i < l; i++) {
+    node.options[i].selected = false;
+}
+JS;
+
+        $this->executeJsOnElement($element, $script);
+    }
+
+    /**
+     * Ensures the element is a checkbox
+     *
+     * @param Element $element
+     * @param string  $xpath
+     * @param string  $type
+     * @param string  $action
+     *
+     * @throws DriverException
+     */
+    private function ensureInputType(Element $element, $xpath, $type, $action) {
+        if ('input' !== strtolower($element->name()) || $type !== strtolower($element->attribute('type'))) {
+            $message = 'Impossible to %s the element with XPath "%s" as it is not a %s input';
+
+            throw new DriverException(sprintf($message, $action, $xpath, $type));
+        }
     }
 }
