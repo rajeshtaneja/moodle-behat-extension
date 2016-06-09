@@ -256,4 +256,24 @@ JS;
         $script = "Syn.trigger('change', {}, {{ELEMENT}})";
         $this->withSyn()->executeJsOnXpath($xpath, $script);
     }
+
+    /**
+     * Post tab key on specified xpath.
+     *
+     * @param string $xpath
+     */
+    public function post_tab_key($xpath) {
+        $element = $this->getWebDriverSession()->element('xpath', $xpath);
+        $element->postValue(array('value' => array(key::TAB)));
+    }
+
+    /**
+     * Post enter key on specified xpath.
+     *
+     * @param string $xpath
+     */
+    public function post_enter_key($xpath) {
+        $element = $this->getWebDriverSession()->element('xpath', $xpath);
+        $element->postValue(array('value' => array(key::ENTER)));
+    }
 }
