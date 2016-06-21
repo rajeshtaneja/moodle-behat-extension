@@ -35,6 +35,8 @@ use Behat\Gherkin\Node\FeatureNode;
 use Behat\Gherkin\Node\StepNode;
 use Behat\Testwork\Environment\Environment;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Behat\Testwork\EventDispatcher\Event\AfterExerciseAborted;
+use Behat\Testwork\EventDispatcher\Event\ExerciseCompleted;
 
 /**
  * Step tester dispatching BEFORE/AFTER events during tests.
@@ -85,7 +87,21 @@ final class MoodleEventDispatchingStepTester implements StepTester
      * {@inheritdoc}
      */
     public function test(Environment $env, FeatureNode $feature, StepNode $step, $skip) {
+        // Handle interupts where pcntl_signal is not loaded.
+        if (function_exists('pcntl_signal')) {
+            declare(ticks = 1);
+            pcntl_signal(SIGINT, array($this, 'abortExercise'));
+        }
         return $this->baseTester->test($env, $feature, $step, $skip);
+    }
+
+    /**
+     * Dispatches AFTER exercise event and exits program.
+     */
+    public function abortExercise() {
+        $this->eventDispatcher->dispatch(ExerciseCompleted::AFTER, new AfterExerciseAborted());
+
+        exit(1);
     }
 
     /**
