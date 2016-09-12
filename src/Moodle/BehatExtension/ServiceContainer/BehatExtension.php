@@ -81,6 +81,9 @@ class BehatExtension implements ExtensionInterface {
 
         // Load namespace alias.
         $this->alias_old_namespaces();
+
+        // Load run with theme controller.
+        $this->loadRunWithThemeController($container);
     }
 
     /**
@@ -140,6 +143,20 @@ class BehatExtension implements ExtensionInterface {
         return new Definition('Behat\Testwork\Output\Printer\StreamOutputPrinter', array(
             new Definition('Behat\Behat\Output\Printer\ConsoleOutputFactory'),
         ));
+    }
+
+    /**
+     * Load run with theme controller to make alias of suite option.
+     *
+     * @param ContainerBuilder $container
+     */
+    protected function loadRunWithThemeController(ContainerBuilder $container) {
+        $definition = new Definition('Moodle\BehatExtension\Tester\Cli\RunWithThemeController', array(
+            new Reference(SuiteExtension::REGISTRY_ID),
+            '%suite.configurations%'
+        ));
+        $definition->addTag(CliExtension::CONTROLLER_TAG, array('priority' => 1100));
+        $container->setDefinition(CliExtension::CONTROLLER_TAG . '.runwiththeme', $definition);
     }
 
     /**
